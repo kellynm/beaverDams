@@ -1,3 +1,7 @@
+#NOTES:
+#1) sys.argv[1] must be GRASS lines vector
+#2) Script must be run in EPSG: 4326 (WGS84) for Maxent formatting
+
 import sys
 import os
 import grass.script as gs
@@ -31,8 +35,6 @@ for lineCat in lineCats:
 
 
 
-#layer = sys.argv[3]
-
 rulesFile.close()
 
 
@@ -40,20 +42,24 @@ rulesFile.close()
 
 rules = os.path.realpath(rulesFile.name)
 damPoints = sys.argv[1] + '_points'
-gs.run_command('v.segment', input='kellyn_dams', output=damPoints, rules=rules, verbose='True', overwrite='True')
+gs.run_command('v.segment', input=sys.argv[1], output=damPoints, rules=rules, verbose='True', overwrite='True')
 
-
-
-
-
-
-#POPULATE ATTRIBUTE TABLE WITH COORDINATES
-
-#damPointsvect = Vector(damPoints)
-#pointsLink = damPointsvect.dblink
-#pointsAtts = pointsLink[0]
-
-
+#add attribute table and Maxent columns
+gs.run_command('v.db.addtable', map=damPoints)
+gs.run_command('v.db.addcolumn', map=damPoints, columns='Species string')
+                    #Add 'beaver dam occurance' in Species column for each point
+gs.run_command('v.to.db', map=damPoints, type=point, option=coor, columns='Long', 'Lat')
 #OUTPUT TO CSV WITH MAXENT FORMATTING
+gs.run_command('db.out.ogr', input=damPoints, output=damPoints + '_maxent_input', format='CSV')
+
+
+
+
+
+
+
+
+
+
 
 
