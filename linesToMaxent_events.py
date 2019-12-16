@@ -11,14 +11,19 @@ import sqlite3
 import csv
 import argparse
 
-try:
-    damsIn = sys.argv[1]
-    pointsPerline = sys.argv[2]
-    csvOutputdir = sys.argv[3]
-    
-except IndexError:
-    print("Please ensure all required parameters are given and follow the format: <linesVectorInput> <pointsPerline> <csvOutputdirectory>")
-    sys.exit()
+#Parse Arguments
+parser = argparse.ArgumentParser(description='Convert vector lines to Maxent formatted points csv file')
+parser.add_argument('damsIn', type=str, help='Input vector lines file')
+parser.add_argument('pointsPerline', type=int, help='Number of points per line')
+parser.add_argument('csvOutputdir', type=str, help='Output directory for Maxent formatted csv file')
+#could add a v.clip call on a 4th argument: study area, which extracts dams in study area
+
+args = parser.parse_args()
+
+damsIn = args.damsIn
+pointsPerline = args.pointsPerline
+csvOutputdir = args.csvOutputdir
+
 
 damLines = Vector(damsIn)
 damLines.open(mode='r')
@@ -33,7 +38,7 @@ for row in cursor.fetchall():
 
 totalPoints = int(pointsPerline*len(lineCats))
 percentIncrement = 100/int(pointsPerline)
-rulesFile = open(sys.argv[3] + '/rules.txt', mode='w')
+rulesFile = open(csvOutputdir + '/rules.txt', mode='w')
 
 pointID = 0
 for lineCat in lineCats:
@@ -53,11 +58,6 @@ rulesFile.close()
 
 rules = os.path.realpath(rulesFile.name)
 damPoints = damsIn + '_points'
-if len(sys.argv) >= 5:
-    studyRegion = sys.argv[4]
-    gs.run_command('g.region', vector=studyRegion)
-else: 
-    pass
 gs.run_command('v.segment', input=damsIn, output=damPoints, rules=rules, verbose='True', overwrite='True')
 
 #add attribute table and Maxent columns
@@ -72,7 +72,7 @@ cursor_2 = pointsAtts.execute()
 
 
 #OUTPUT TO CSV WITH MAXENT FORMATTING
-csvOutputdir = sys.argv[3]
+csvOutputdir = csvOutputdir
 csvOutputFile = os.path.join(csvOutputdir, damPoints + '_maxent_input.csv')
 
 gs.run_command('db.out.ogr', input=damPoints, output=csvOutputFile, format='CSV', overwrite='True') 
